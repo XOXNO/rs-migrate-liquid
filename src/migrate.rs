@@ -73,8 +73,9 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
             .returns(ReturnsBackTransfersSingleESDT)
             .sync_call();
 
+        let sc = &self.blockchain().get_sc_address();
         let data = self.blockchain().get_esdt_token_data(
-            &self.blockchain().get_caller(),
+            sc,
             &unbond_nft.token_identifier,
             unbond_nft.token_nonce,
         );
@@ -98,12 +99,11 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
         let nft_ticker = self.nft_ticker().get();
 
         let epoch = self.blockchain().get_block_epoch();
+        let sc = &self.blockchain().get_sc_address();
 
-        let data = self.blockchain().get_esdt_token_data(
-            &self.blockchain().get_caller(),
-            &nft_ticker,
-            nonce,
-        );
+        let data = self
+            .blockchain()
+            .get_esdt_token_data(sc, &nft_ticker, nonce);
 
         let attributes = data.decode_attributes::<UndelegateAttributes<Self::Api>>();
 
