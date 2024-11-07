@@ -1,7 +1,7 @@
 #![no_std]
 
 use multiversx_sc::hex_literal::hex;
-#[allow(unused_imports)]
+
 use multiversx_sc::imports::*;
 use proxy_segld::UndelegateAttributes;
 pub mod proxy_liquid;
@@ -10,8 +10,8 @@ pub mod proxy_segld;
 pub mod storage;
 pub mod utils;
 
-const xxx: [u8; 32] = hex!("00000000000000000500aa049c3bd6dda4438a097d719d37efef2eb148cff1e1");
-const trs: [u8; 32] = hex!("00000000000000000500aa049c3bd6dda4438a097d719d37efef2eb148cff1e1");
+const XXX: [u8; 32] = hex!("0000000000000000000100000000000000000000000000000000000020ffffff");
+const TRS: [u8; 32] = hex!("000000000000000000010000000000000000000000000000000000000affffff");
 
 #[multiversx_sc::contract]
 pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
@@ -80,13 +80,13 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
         );
 
         let mut contracts: ManagedVec<Self::Api, ManagedAddress> = ManagedVec::new();
-        contracts.push(ManagedAddress::new_from_bytes(&xxx));
-        contracts.push(ManagedAddress::new_from_bytes(&trs));
+        contracts.push(ManagedAddress::new_from_bytes(&XXX));
+        contracts.push(ManagedAddress::new_from_bytes(&TRS));
 
         let attributes = data.decode_attributes::<UndelegateAttributes<Self::Api>>();
 
         require!(
-            contracts.contains(&attributes.delegation_contract),
+            !contracts.contains(&attributes.delegation_contract),
             "Out of sync"
         );
 
@@ -96,7 +96,9 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
     #[endpoint]
     fn withdraw(&self, nonce: u64) {
         let nft_ticker = self.nft_ticker().get();
+
         let epoch = self.blockchain().get_block_epoch();
+
         let data = self.blockchain().get_esdt_token_data(
             &self.blockchain().get_caller(),
             &nft_ticker,
@@ -120,8 +122,10 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
             .to(self.liquid_sc().get())
             .typed(proxy_liquid::LiquidStakingProxy)
             .migrate_pending()
-            .egld(egld)
+            .egld(&egld)
             .sync_call();
+
+        self.virtual_egld_added().update(|added| *added -= &egld);
     }
 
     fn migrate_segld(&self, payment: EsdtTokenPayment) {
@@ -129,6 +133,9 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
             .update(|pending| *pending += &payment.amount);
 
         let egld_amount = self.shares_to_egld(&payment.amount);
+
+        self.virtual_egld_added()
+            .update(|added| *added += &egld_amount);
 
         let xegld_payment = self
             .tx()

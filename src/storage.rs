@@ -38,4 +38,8 @@ pub trait StorageModule {
     #[view(getPendingSegld)]
     #[storage_mapper("pending_segld")]
     fn pending_segld(&self) -> SingleValueMapper<BigUint>;
+
+    #[view(getVirtualEgldAdded)]
+    #[storage_mapper("virtual_egld_added")]
+    fn virtual_egld_added(&self) -> SingleValueMapper<BigUint>;
 }

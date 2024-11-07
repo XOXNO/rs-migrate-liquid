@@ -6,9 +6,9 @@
 
 // Init:                                 1
 // Upgrade:                              1
-// Endpoints:                           10
+// Endpoints:                           13
 // Async Callback (empty):               1
-// Total number of exported functions:  13
+// Total number of exported functions:  16
 
 #![no_std]
 
@@ -22,6 +22,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         upgrade => upgrade
         migrate => migrate
         un_delegate => un_delegate
+        withdraw => withdraw
         getSegld => segld
         getSegldSc => segld_sc
         getHegld => hegld
@@ -29,7 +30,9 @@ multiversx_sc_wasm_adapter::endpoints! {
         getHsegld => hsegld
         getHsegldSc => hsegld_sc
         getLiquidSc => liquid_sc
+        getNftTicker => nft_ticker
         getPendingSegld => pending_segld
+        getVirtualEgldAdded => virtual_egld_added
     )
 }
 
