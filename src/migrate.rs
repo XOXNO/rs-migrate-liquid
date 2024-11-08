@@ -38,10 +38,29 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
     }
 
     #[upgrade]
-    fn upgrade(&self) {}
+    fn upgrade(
+        &self,
+        segld: TokenIdentifier,
+        hegld: TokenIdentifier,
+        hsegld: TokenIdentifier,
+        segld_sc: ManagedAddress,
+        hegld_sc: ManagedAddress,
+        hsegld_sc: ManagedAddress,
+        xoxno_liquid_sc: ManagedAddress,
+        nft_ticker: TokenIdentifier,
+    ) {
+        self.segld().set(segld);
+        self.hegld().set(hegld);
+        self.hsegld().set(hsegld);
+        self.segld_sc().set(segld_sc);
+        self.hegld_sc().set(hegld_sc);
+        self.hsegld_sc().set(hsegld_sc);
+        self.liquid_sc().set(xoxno_liquid_sc);
+        self.nft_ticker().set(nft_ticker);
+    }
 
-    #[payable('*')]
-    #[endpoint]
+    #[payable("*")]
+    #[endpoint(migrate)]
     fn migrate(&self) {
         let payment = self.call_value().single_esdt();
 
@@ -59,14 +78,14 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
         }
     }
 
-    #[endpoint]
+    #[endpoint(unDelegate)]
     fn un_delegate(&self) {
         let segld = self.segld().get();
         let amount = self.pending_segld().get();
 
         let unbond_nft = self
             .tx()
-            .to(self.liquid_sc().get())
+            .to(self.segld_sc().get())
             .typed(proxy_segld::LiquidStakingProxy)
             .undelegate(OptionalValue::<ManagedAddress>::None)
             .single_esdt(&segld, 0, &amount)
@@ -111,7 +130,7 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
 
         let egld = self
             .tx()
-            .to(self.liquid_sc().get())
+            .to(self.segld_sc().get())
             .typed(proxy_segld::LiquidStakingProxy)
             .withdraw()
             .single_esdt(&nft_ticker, nonce, &data.amount)
@@ -151,16 +170,14 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
 
     fn migrate_hegld(&self, payment: EsdtTokenPayment) {
         let caller = self.blockchain().get_caller();
-        let back_transfers = self
+        let egld_amount = self
             .tx()
             .to(self.hegld_sc().get())
             .typed(proxy_market::MoneyMarketProxy)
             .redeem(OptionalValue::<BigUint>::None)
             .with_esdt_transfer(payment)
-            .returns(ReturnsBackTransfers)
+            .returns(ReturnsBackTransfersEGLD)
             .sync_call();
-
-        let egld_amount = back_transfers.total_egld_amount;
 
         require!(egld_amount > BigUint::zero(), "Invalid token identifier");
 

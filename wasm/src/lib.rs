@@ -21,7 +21,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         init => init
         upgrade => upgrade
         migrate => migrate
-        un_delegate => un_delegate
+        unDelegate => un_delegate
         withdraw => withdraw
         getSegld => segld
         getSegldSc => segld_sc
