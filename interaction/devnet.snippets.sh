@@ -47,7 +47,7 @@ unDelegate() {
 }
 
 withdraw() {
-    NONCE=0xef
+    NONCE=0xf5
     mxpy --verbose contract call ${ADDRESS} \
     --function="withdraw" \
     --arguments ${NONCE} \
