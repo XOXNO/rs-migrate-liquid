@@ -137,19 +137,19 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
             .returns(ReturnsBackTransfersEGLD)
             .sync_call();
 
-        self.tx()
-            .to(self.liquid_sc().get())
-            .typed(proxy_liquid::LiquidStakingProxy)
-            .migrate_pending()
-            .egld(&egld)
-            .sync_call();
-
         let virtual_map = self.virtual_egld_added();
         let virtual_egld_added = virtual_map.get();
         // In case the NFT gives more than was used to migrate
         // Can happen only of we unstake later than 1 epoch the original migration amount
-        if egld > virtual_egld_added {
-            let rewards = egld - virtual_egld_added;
+        if egld > virtual_egld_added.clone() {
+            let rewards = egld - virtual_egld_added.clone();
+
+            self.tx()
+                .to(self.liquid_sc().get())
+                .typed(proxy_liquid::LiquidStakingProxy)
+                .migrate_pending()
+                .egld(&virtual_egld_added)
+                .sync_call();
 
             self.tx()
                 .to(self.liquid_sc().get())
@@ -159,6 +159,12 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
                 .sync_call();
             virtual_map.clear();
         } else {
+            self.tx()
+                .to(self.liquid_sc().get())
+                .typed(proxy_liquid::LiquidStakingProxy)
+                .migrate_pending()
+                .egld(&egld)
+                .sync_call();
             let left = virtual_egld_added - egld;
             virtual_map.set(left);
         }
