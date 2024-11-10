@@ -13,7 +13,7 @@ pub trait UtilsModule: crate::storage::StorageModule {
             .typed(proxy_segld::LiquidStakingProxy)
             .get_exchange_rate()
             .returns(ReturnsResult)
-            .sync_call();
+            .sync_call_readonly();
 
         rate
     }

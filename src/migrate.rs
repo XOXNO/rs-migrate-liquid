@@ -185,8 +185,7 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
             .tx()
             .to(self.liquid_sc().get())
             .typed(proxy_liquid::LiquidStakingProxy)
-            .delegate()
-            .egld(egld_amount)
+            .migrate(egld_amount.clone(), caller.clone())
             .returns(ReturnsBackTransfersSingleESDT)
             .sync_call();
 
@@ -196,6 +195,13 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
         );
 
         self.tx().to(caller).esdt(xegld_payment).transfer();
+
+        self.tx()
+            .to(self.liquid_sc().get())
+            .typed(proxy_liquid::LiquidStakingProxy)
+            .migrate_pending()
+            .egld(&egld_amount)
+            .sync_call();
     }
 
     fn migrate_hsegld(&self, payment: EsdtTokenPayment) {
