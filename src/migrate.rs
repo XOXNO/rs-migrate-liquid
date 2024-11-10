@@ -144,7 +144,24 @@ pub trait Migrate: crate::storage::StorageModule + crate::utils::UtilsModule {
             .egld(&egld)
             .sync_call();
 
-        self.virtual_egld_added().update(|added| *added -= &egld);
+        let virtual_map = self.virtual_egld_added();
+        let virtual_egld_added = virtual_map.get();
+        // In case the NFT gives more than was used to migrate
+        // Can happen only of we unstake later than 1 epoch the original migration amount
+        if egld > virtual_egld_added {
+            let rewards = egld - virtual_egld_added;
+
+            self.tx()
+                .to(self.liquid_sc().get())
+                .typed(proxy_liquid::LiquidStakingProxy)
+                .add_rewards()
+                .egld(&rewards)
+                .sync_call();
+            virtual_map.clear();
+        } else {
+            let left = virtual_egld_added - egld;
+            virtual_map.set(left);
+        }
     }
 
     fn migrate_segld(&self, payment: EsdtTokenPayment) {
